@@ -128,7 +128,7 @@ include_directories(
 
 ## Declare a C++ library
  add_library(basicControl
-   src/BasicControllers.cpp
+   src/${PROJECT_NAME}/src/BasicControllers.cpp
   )
 
 ## Add cmake target dependencies of the library
