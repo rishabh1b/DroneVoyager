@@ -1,28 +1,13 @@
 /*
- * Copyright (C) 2008, Morgan Quigley and Willow Garage, Inc.
+ * Michael Avera
+ * University of Maryland, College Park
+ * CMSC828T Fall 2017
+ * Project (Fly AR Drone 2.0 through window with AR tags at each corner)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the names of Stanford University or Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived from
- *     this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * TAGS NODE (this file)
+ * Identify AR tags of window and calculate location of window center relative to camera frame
+ * reads detected AR tag locations published BY ar_track_alvar ROS package to /ar_pose_marker topic
+ * publishes 3D coordinates of window center to /window_cent topic 
  */
 
 // %Tag(FULLTEXT)%
@@ -31,6 +16,8 @@
 #include "ar_track_alvar_msgs/AlvarMarkers.h"
 #include "ardrone_control/PointArray.h"
 #include <vector>
+#include <valarray>
+#include <iostream>
 
 
 class ReadAndCalc
@@ -45,20 +32,57 @@ public:
   void chatterCallback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg)
   {
 
-
     geometry_msgs::Point pnt;
     ardrone_control::PointArray pnts;
+    std::vector<float> x,y,z,d,e,f;
+    /*std::vector<float> y;*/
+    /*std::vector<float> d;*/
+    /*std::vector<float> e;*/
+    float dMax=0.0;
+    float eMax=0.0;
+    float fMax=0.0;
 
     for (int i=0; i<msg->markers.size(); ++i)
       {
         /*ROS_INFO_STREAM("detected tag: " << msg->markers[i].id << "position: "<< msg->markers[i].pose.pose.position);*/
-        pnt.x=msg->markers[i].pose.pose.position.x;
-        pnt.y=msg->markers[i].pose.pose.position.y;
-        pnt.z=msg->markers[i].pose.pose.position.z;
-        pnts.points.push_back(pnt);
-      }
 
+        /* WHAT IF NOT ALL 4 TAGS ARE DETECTED? 3 IS ENOUGH TO FIND WINDOW CENTER. LOOK AT USING BUNDLES*/
+        /* WHAT IF THE 5 TAG IS ACCIDENTALLY DETECTED?*/
+        /* HOW TO DEFINE THE WINDO TAGS SEPARATELY FROM 5TH TAG?*/
+        x.push_back(msg->markers[i].pose.pose.position.x);
+        y.push_back(msg->markers[i].pose.pose.position.y);
+        z.push_back(msg->markers[i].pose.pose.position.z);
+        /*pnts.points.push_back(pnt);*/
+      }
+      
+    for (int j=1; j<x.size(); ++j) 
+      {  
+        d.push_back(x[0]-x[j]);
+        e.push_back(y[0]-y[j]);
+        f.push_back(z[0]-z[j]);
+        /*ROS_INFO("d : %d",d);
+        /*std::valarray<float> dist (val,3);*/
+        /*std::valarray<float> cent = abs(dist);*/
+      }
+    /*ROS_INFO("size of d : %d",d.size());
+      /*std::cout << d.size();*/
+    for (int k = 0; k < d.size(); k++)
+      {
+        if (abs(d[k]) > dMax)
+          pnt.x = abs(d[k]);
+        if (abs(e[k]) > eMax)
+          pnt.y = (e[k]);
+        if (abs(f[k]) > fMax)
+          pnt.z = f[k];
+      }
+    if (x.size() > 0)
+    { 
+      pnt.x+=x[0];
+      pnt.y+=y[0];
+      pnt.z+=z[0];
+      pnts.points.push_back(pnt);  
       pub.publish(pnts);
+    }
   }
 // %EndTag(CALLBACK)%
 
