@@ -14,10 +14,9 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Point.h"
 #include "ar_track_alvar_msgs/AlvarMarkers.h"
-#include "ardrone_control/PointArray.h"
 #include <vector>
-#include <valarray>
 #include <iostream>
+#include <cmath>
 
 
 class ReadAndCalc
@@ -25,7 +24,7 @@ class ReadAndCalc
 public:
   ReadAndCalc()
   {
-    pub = n.advertise<ardrone_control::PointArray>("window_cent", 100);
+    pub = n.advertise<geometry_msgs::Point>("window_cent", 100);
     sub = n.subscribe("ar_pose_marker", 100, &ReadAndCalc::chatterCallback, this);
   }
 
@@ -33,18 +32,13 @@ public:
   {
 
     geometry_msgs::Point pnt;
-    ardrone_control::PointArray pnts;
     std::vector<float> x,y,z,d,e,f;
-    /*std::vector<float> y;*/
-    /*std::vector<float> d;*/
-    /*std::vector<float> e;*/
     float dMax=0.0;
     float eMax=0.0;
     float fMax=0.0;
 
     for (int i=0; i<msg->markers.size(); ++i)
       {
-        /*ROS_INFO_STREAM("detected tag: " << msg->markers[i].id << "position: "<< msg->markers[i].pose.pose.position);*/
 
         /* WHAT IF NOT ALL 4 TAGS ARE DETECTED? 3 IS ENOUGH TO FIND WINDOW CENTER. LOOK AT USING BUNDLES*/
         /* WHAT IF THE 5 TAG IS ACCIDENTALLY DETECTED?*/
@@ -52,37 +46,21 @@ public:
         x.push_back(msg->markers[i].pose.pose.position.x);
         y.push_back(msg->markers[i].pose.pose.position.y);
         z.push_back(msg->markers[i].pose.pose.position.z);
-        /*pnts.points.push_back(pnt);*/
+        if (i>0)
+        {
+          d.push_back(x[0]-x[i]);
+          e.push_back(y[0]-y[i]);
+          f.push_back(z[0]-z[i]);
+        if (std::abs(d[i]) > dMax)
+          pnt.x = std::abs(d[i])/2+x[0];
+        if (std::abs(e[i]) > eMax)
+          pnt.y = std::abs(e[i])/2+y[0];
+        if (std::abs(f[i]) > fMax)
+          pnt.z = std::abs(f[i])/2+z[0];
+        }
       }
-      
-    for (int j=1; j<x.size(); ++j) 
-      {  
-        d.push_back(x[0]-x[j]);
-        e.push_back(y[0]-y[j]);
-        f.push_back(z[0]-z[j]);
-        /*ROS_INFO("d : %d",d);
-        /*std::valarray<float> dist (val,3);*/
-        /*std::valarray<float> cent = abs(dist);*/
-      }
-    /*ROS_INFO("size of d : %d",d.size());
-      /*std::cout << d.size();*/
-    for (int k = 0; k < d.size(); k++)
-      {
-        if (abs(d[k]) > dMax)
-          pnt.x = abs(d[k]);
-        if (abs(e[k]) > eMax)
-          pnt.y = (e[k]);
-        if (abs(f[k]) > fMax)
-          pnt.z = f[k];
-      }
-    if (x.size() > 0)
-    { 
-      pnt.x+=x[0];
-      pnt.y+=y[0];
-      pnt.z+=z[0];
-      pnts.points.push_back(pnt);  
-      pub.publish(pnts);
-    }
+      if (x.size()>0)
+      pub.publish(pnt);   
   }
 // %EndTag(CALLBACK)%
 
