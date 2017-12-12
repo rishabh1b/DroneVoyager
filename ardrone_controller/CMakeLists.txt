@@ -20,8 +20,9 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+MESSAGE( STATUS "CMAKE_MODULE_PATH:         " ${CMAKE_CURRENT_SOURCE_DIR} )
+find_package(Eigen3 REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -124,6 +125,7 @@ catkin_package(
 include_directories( 
    include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 ## Declare a C++ library
@@ -140,6 +142,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(openloop src/main.cpp)
+ add_executable(pass_window src/GoThroughWindow.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,6 +158,11 @@ include_directories(
   target_link_libraries(openloop
     ${catkin_LIBRARIES}
     basicControl
+ )
+
+target_link_libraries(pass_window
+    ${catkin_LIBRARIES}
+    ${EIGEN3_LIBS}
  )
 
 #############
