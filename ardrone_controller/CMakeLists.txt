@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ardrone_controller)
+project(ardrone_control)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,15 +8,13 @@ project(ardrone_controller)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cvg_sim_gazebo
-  cvg_sim_gazebo_plugins
-  cvg_sim_msgs
-  geometry_msgs
-  message_to_tf
-  nav_msgs
   roscpp
   rospy
-  tf
+  std_msgs
+  geometry_msgs
+  ar_track_alvar
+ # message_generation
+ # gscam
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,7 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
-#   Message1.msg
+#   PointArray.msg
 #   Message2.msg
 # )
 
@@ -76,7 +74,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   cvg_sim_msgs#   geometry_msgs#   nav_msgs
+#   geometry_msgs
 # )
 
 ################################################
@@ -110,9 +108,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ardrone_controller
-#  CATKIN_DEPENDS cvg_sim_gazebo cvg_sim_gazebo_plugins cvg_sim_msgs geometry_msgs message_to_tf nav_msgs roscpp rospy tf
-#  DEPENDS system_lib
+#  LIBRARIES beginner_tutorials
+#  CATKIN_DEPENDS roscpp rospy std_msgs
+  DEPENDS geometry_msgs
 )
 
 ###########
@@ -121,15 +119,15 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories( 
-   include
+include_directories(
+# include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
- add_library(basicControl
-   src/BasicControllers.cpp
-  )
+# add_library(${PROJECT_NAME}
+#   src/${PROJECT_NAME}/beginner_tutorials.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -138,8 +136,8 @@ include_directories(
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
- add_executable(openloop src/main.cpp)
+## The recommended prefix ensures that target names across packages dont collide
+# add_executable(${PROJECT_NAME}_node src/beginner_tutorials_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,10 +150,9 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-  target_link_libraries(openloop
-    ${catkin_LIBRARIES}
-    basicControl
- )
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -197,10 +194,14 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ardrone_controller.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_beginner_tutorials.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(tags src/tags.cpp)
+target_link_libraries(tags ${catkin_LIBRARIES})
+add_dependencies(tags beginner_tutorials_generate_messages_cpp)
