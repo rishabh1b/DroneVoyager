@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ardrone_controller)
+project(ardrone_control)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -56,7 +56,7 @@ find_package(Eigen3 REQUIRED)
 ## Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
-#   Message1.msg
+#   PointArray.msg
 #   Message2.msg
 # )
 
@@ -77,7 +77,7 @@ find_package(Eigen3 REQUIRED)
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   cvg_sim_msgs#   geometry_msgs#   nav_msgs
+#   geometry_msgs
 # )
 
 ################################################
@@ -111,9 +111,9 @@ find_package(Eigen3 REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES ardrone_controller
-#  CATKIN_DEPENDS cvg_sim_gazebo cvg_sim_gazebo_plugins cvg_sim_msgs geometry_msgs message_to_tf nav_msgs roscpp rospy tf
-#  DEPENDS system_lib
+#  LIBRARIES beginner_tutorials
+#  CATKIN_DEPENDS roscpp rospy std_msgs
+  DEPENDS geometry_msgs
 )
 
 ###########
@@ -122,16 +122,18 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories( 
-   include
+include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
 )
 
+
 ## Declare a C++ library
  add_library(basicControl
    src/BasicControllers.cpp
-  )
+)
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -155,10 +157,13 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-  target_link_libraries(openloop
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
+target_link_libraries(openloop
     ${catkin_LIBRARIES}
     basicControl
- )
+)
 
 target_link_libraries(pass_window
     ${catkin_LIBRARIES}
@@ -205,10 +210,14 @@ target_link_libraries(pass_window
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ardrone_controller.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_beginner_tutorials.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(tags src/tags.cpp)
+target_link_libraries(tags ${catkin_LIBRARIES})
+add_dependencies(tags beginner_tutorials_generate_messages_cpp)
