@@ -243,7 +243,7 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				// False values
 				fakecmdpub_.publish(controlsig);
 				
-				if (false)
+				if (enablecontrol)
 				{
 					 cmdpub_.publish(controlsig); 
 				}
@@ -340,6 +340,32 @@ void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstP
 		// tf::transform predictedposetrans = predictedpose.inverse();
 		window_found_ = true;
 }
+
+void GoTroughWindow::keyCallBack(const std_msgs::Char key)
+	{
+		switch(key.data)
+		{
+			case KEYCODE_G:
+				enablecontrol =1;
+				ROS_INFO("Control enabled. Drone holding place");
+				break;   
+				
+			case KEYCODE_0:
+				enablecontrol =1;
+				ROS_INFO("Control enabled. Drone holding place");
+				break;  
+
+			case KEYCODE_P:
+				enablecontrol =1;
+				ROS_INFO("Control enabled. Drone following path");
+				break;  
+
+			case KEYCODE_M:
+				enablecontrol =0;
+				ROS_INFO("Control disabled. Drone back in manual");
+				break;   
+		}
+	}
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "pass_window");	
