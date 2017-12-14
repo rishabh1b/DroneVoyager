@@ -65,4 +65,5 @@ public:
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
 	void getWindowCentre(const geometry_msgs::Point msg);
 	void Control(const ardrone_autonomy::Navdata navdata);
+	void eyCallBack(const std_msgs::Char key)
 };
