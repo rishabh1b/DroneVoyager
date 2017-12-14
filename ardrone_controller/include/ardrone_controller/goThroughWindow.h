@@ -42,11 +42,15 @@ tf::StampedTransform transformPoseError; /** transform between /ardrone_base_lin
 int near; /** near=1 if distance to setpoint is small */
 bool enablecontrol; /** to enable the control focus the terminal and press the C key on keyboard */
 
+tf::StampedTransform transformCameraToRobot;
+tf::Transform transformCameraToRobotUnStamped;
+
 
 class GoThroughWindow {
 private:
 	ros::NodeHandle n_;
 	ros::Publisher cmdpub_;
+    ros::Publisher fakecmdpub_;
 	ros::Subscriber navdataSub_ ;
 	ros::Subscriber arTagSubscriber_;
 	ros::Subscriber windowCentreSubscriber_;
@@ -60,6 +64,7 @@ private:
 	std::string marker_frame;
     tf::Transform transformWindowCentre;
     tf::TransformListener listener;
+    tf::TransformListener camera_to_base;
 public:
 	GoThroughWindow();
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);

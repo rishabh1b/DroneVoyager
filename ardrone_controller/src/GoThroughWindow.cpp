@@ -3,12 +3,27 @@
 GoThroughWindow::GoThroughWindow() {
 	errpub_ = n_.advertise<geometry_msgs::Twist>("/controlerror", 1);
 	cmdpub_ = n_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+	fakecmdpub_ = n_.advertise<geometry_msgs::Twist>("/cmd_vel_fake", 1);
 	windowCentreSubscriber_ = n_.subscribe("/window_cent", 1, &GoThroughWindow::getWindowCentre, this);
 	// keySub_ = n_.subscribe("/keyinput", 1, &SubscribeAndPublish::keyCallBack, this);
 	// poseRateSetPointSub_ = n_.subscribe("poseRateSetPoint", 1, &SubscribeAndPublish::poseRateSPCallback, this);
 	navdataSub_ = n_.subscribe("ardrone/navdata", 1, &GoThroughWindow::Control, this);
 	arTagSubscriber_ = n_.subscribe("ar_pose_marker", 10, &GoThroughWindow::updatePose, this);
 	centre_found = false;
+
+	// Get the Static Transform
+	try
+	{
+		listener.waitForTransform("ardrone_base_link", "ardrone_base_frontcam", ros::Time(0), ros::Duration(10.0) );
+		listener.lookupTransform("ardrone_base_link", "ardrone_base_frontcam", ros::Time(0), transformCameraToRobot); /** gets the last published transformation */
+	}
+					
+	catch (tf::TransformException ex)
+	{
+		ROS_ERROR("%s",ex.what());  /** handle errors */
+	}
+	transformCameraToRobotUnStamped.setRotation(transformCameraToRobot.getRotation());
+	transformCameraToRobotUnStamped.setOrigin(transformCameraToRobot.getOrigin());
 }
 void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 	timestamp = navdata.tm;
@@ -23,7 +38,7 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 	//{
 		if (true)//(navdata.state == 3 ) || (navdata.state == 4) || ( navdata.state == 8)) /** 3=flying 8=transition to hover, 4= hovering */
 		{
-			if (((timestamp - takeofftime)/1000000.0) > 2) /** past 2 seconds of stable flight do the control:  */ 
+			if (true)//((timestamp - takeofftime)/1000000.0) > 2) /** past 2 seconds of stable flight do the control:  */ 
 			{
 				/** GET TRANSFORM */
 				//Populate transformPoseError here
@@ -38,6 +53,18 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 					ROS_ERROR("%s",ex.what());  /** handle errors */
 				}
 				
+				tf::Quaternion quat = transformPoseError.getRotation();
+				tf::Vector3 trans = transformPoseError.getOrigin();
+
+                // Get Unstamped
+				tf::Transform currentPoseError;
+				currentPoseError.setRotation(quat);
+				currentPoseError.setOrigin(trans);
+
+                // Convert the error to the Robot frame
+				currentPoseError = transformCameraToRobotUnStamped * currentPoseError;
+
+
 				/** INPUTS */
 				double linvx; linvx = navdata.vx/1000.0; /** linear velocity in the x axis (in m/sec) */
 				double linvy; linvy = navdata.vy/1000.0; /** linear velocity in the x axis (in m/sec) */
@@ -49,14 +76,14 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				double pitch;
 				double yawErr;
 				
-				tf::Matrix3x3 R=tf::Matrix3x3(transformPoseError.getRotation());  /** get rotation matrix from quaternion in transform */
+				tf::Matrix3x3 R=tf::Matrix3x3(currentPoseError.getRotation());  /** get rotation matrix from quaternion in transform */
 				R.getRPY(roll, pitch, yawErr);	 /** get euler angles */
 				
 				double altitudeErr;
-				altitudeErr = transformPoseError.getOrigin().z();
+				altitudeErr = currentPoseError.getOrigin().z();
 				
 				Eigen::Vector2d xyErr;
-				xyErr << transformPoseError.getOrigin().x() , transformPoseError.getOrigin().y() ;
+				xyErr << currentPoseError.getOrigin().x() , currentPoseError.getOrigin().y() ;
 				
 				
 				geometry_msgs::Twist error;
@@ -66,7 +93,8 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				error.linear.z=altitudeErr;
 				error.angular.x=0;
 				error.angular.y=0;
-				error.angular.z=yawErr;
+				//error.angular.z=yawErr; pi/2  error is the angle between the Camera frame and the Robot Frame
+				error.angular.z=0;
 				
 				errpub_.publish(error); 
 										
@@ -212,6 +240,8 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				
 				
 				/** PUBLISH CONTROL SIGNALS */
+				// False values
+				fakecmdpub_.publish(controlsig);
 				
 				if (false)
 				{
@@ -264,16 +294,26 @@ void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstP
 
     // Query the minimum Tag ID for pose
         int minid = tagids[0];
+        int minid2 = tagids[0];
         float min_x = msg->markers[0].pose.pose.position.x;
-        float min_y = msg->markers[0].pose.pose.position.y;
+        // float min_y = msg->markers[0].pose.pose.position.y;
+        float min_x2 = 10000;
+        // float min_y2 = msg->markers[0].pose.pose.position.y;
         for (int i = 1; i < msg->markers.size(); i++) {
-        	if (msg->markers[i].pose.pose.position.x < min_x && msg->markers[i].pose.pose.position.y < min_y)
+        	if (msg->markers[i].pose.pose.position.x < min_x)
         	{
         		min_x = msg->markers[i].pose.pose.position.x;
-        		min_y = msg->markers[i].pose.pose.position.y;
         		minid = tagids[i];
         	}
+        	else if (msg->markers[i].pose.pose.position.x < min_x2 && msg->markers[i].pose.pose.position.x - min_x < 0.1) {
+        		min_x2 = msg->markers[i].pose.pose.position.x;
+        		minid2 = tagids[i];
+        	}
         }
+        if(msg->markers[minid2].pose.pose.position.y > msg->markers[minid].pose.pose.position.y)
+        	minid = minid2;
+
+
         std::stringstream ss;
         ss << minid;
 

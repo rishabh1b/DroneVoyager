@@ -51,17 +51,26 @@ public:
           d.push_back(x[0]-x[i]);
           e.push_back(y[0]-y[i]);
           f.push_back(z[0]-z[i]);
-        if (std::abs(d[i]) > dMax)
-          pnt.x = std::abs(d[i])/2+x[0];
-        if (std::abs(e[i]) > eMax)
-          pnt.y = std::abs(e[i])/2+y[0];
-        if (std::abs(f[i]) > fMax)
-          pnt.z = std::abs(f[i])/2+z[0];
+        if (std::abs(d[i-1]) > dMax) {
+          // pnt.x = std::abs(d[i])/2+x[0];
+          pnt.x = std::abs(d[i-1])/2;
+          dMax = std::abs(d[i-1]);
+        }
+        if (std::abs(e[i-1]) > eMax) {
+          // pnt.y = std::abs(e[i])/2+y[0];
+          pnt.y = std::abs(e[i-1])/2;
+          eMax = std::abs(e[i-1]);
+        }
+        if (std::abs(f[i-1]) > fMax) {
+          // pnt.z = std::abs(f[i])/2+z[0];
+          pnt.z = std::abs(f[i-1])/2;
+          fMax = std::abs(f[i-1]);
         }
       }
-      if (x.size()>0)
+      //if (x.size()>0)
       pub.publish(pnt);   
   }
+}
 // %EndTag(CALLBACK)%
 
 private:
