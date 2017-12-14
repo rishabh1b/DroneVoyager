@@ -7,6 +7,7 @@ GoThroughWindow::GoThroughWindow() {
 	// keySub_ = n_.subscribe("/keyinput", 1, &SubscribeAndPublish::keyCallBack, this);
 	// poseRateSetPointSub_ = n_.subscribe("poseRateSetPoint", 1, &SubscribeAndPublish::poseRateSPCallback, this);
 	navdataSub_ = n_.subscribe("ardrone/navdata", 1, &GoThroughWindow::Control, this);
+	arTagSubscriber_ = n_.subscribe("ar_pose_marker", 10, &GoThroughWindow::updatePose, this);
 	centre_found = false;
 }
 void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
@@ -16,10 +17,11 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 	if  ((navdata.state == 2) || (navdata.state == 7)) /** 2 = landed, ready to take off. 7 = taking off */
 	{	
 		takeofftime = timestamp;
+		// ROS_INFO("Came in control callback");
 	}
-	else 
-	{
-		if ((navdata.state == 3 ) || (navdata.state == 4) || ( navdata.state == 8)) /** 3=flying 8=transition to hover, 4= hovering */
+	//else 
+	//{
+		if (true)//(navdata.state == 3 ) || (navdata.state == 4) || ( navdata.state == 8)) /** 3=flying 8=transition to hover, 4= hovering */
 		{
 			if (((timestamp - takeofftime)/1000000.0) > 2) /** past 2 seconds of stable flight do the control:  */ 
 			{
@@ -27,8 +29,8 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				//Populate transformPoseError here
 				try
 				{
-					listener.waitForTransform("/camera_frame", "/target", ros::Time(0), ros::Duration(10.0) );
-					listener.lookupTransform("/camera_frame", "/target", ros::Time(0), transformPoseError); /** gets the last published transformation */
+					listener.waitForTransform("/ardrone_base_frontcam", "target", ros::Time(0), ros::Duration(10.0) );
+					listener.lookupTransform("/ardrone_base_frontcam", "target", ros::Time(0), transformPoseError); /** gets the last published transformation */
 				}
 					
 				catch (tf::TransformException ex)
@@ -70,7 +72,7 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 										
 				
 				
-				/** CONTROLER */
+				/** CONTROLLER */
 				
 				geometry_msgs::Twist controlsig;
 				
@@ -211,7 +213,7 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				
 				/** PUBLISH CONTROL SIGNALS */
 				
-				if (enablecontrol)
+				if (false)
 				{
 					 cmdpub_.publish(controlsig); 
 				}
@@ -221,26 +223,33 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 
 			} /** END OF THE FLIGHT TIME CONDITION */
 		} /** END OF THE FLYING STATE CONDITION */	 
-	} /** END OF THE FLYING STATE CONDITION */
+	//} /** END OF THE FLYING STATE CONDITION */
 } /** end of the callback function for the class SubscriveAndPublish*/
 
-void GoThroughWindow::getWindowCentre(const geometry_msgs::Point::ConstPtr& msg) {
+void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
 	static tf::TransformBroadcaster br;
-	if (msg && !centre_found && window_found_) {
-		wind_x_ = msg->x;
-		wind_y_ = msg->y;
-		wind_z_ = msg->z;
+	if (!centre_found && window_found_) {
+		ROS_INFO("Populating window values");
+		wind_x_ = msg.x;
+		wind_y_ = msg.y;
+		wind_z_ = msg.z;
 
- 	    transformWindowCentre.setOrigin( tf::Vector3(msg->x, msg->y, msg->z) );
+ 	    transformWindowCentre.setOrigin( tf::Vector3(msg.x, -msg.y, 0) );
         tf::Quaternion q;
         q.setRPY(0, 0, 0);
         transformWindowCentre.setRotation(q);
 		centre_found = true;
 	}
-	br.sendTransform(tf::StampedTransform(transformWindowCentre, ros::Time::now(), marker_frame, "/target"));	
+	if (window_found_) {
+		// ROS_INFO("Trying to broadcast target");
+		std::cout << marker_frame << std::endl;
+		if (!marker_frame.empty())
+			br.sendTransform(tf::StampedTransform(transformWindowCentre, ros::Time::now(), marker_frame, "target"));	
+	}
 }
 
-void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){	
+void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){
+	 // ROS_INFO("Came in Alvar message callback");	
 	 std::vector<int> tagids;
 	 if (msg->markers.size() == 0)
 	 	return;
@@ -253,16 +262,27 @@ void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstP
         tagids.push_back(msg->markers[i].id);
     }
 
-    // Query the first Tag ID for pose
-        int id = tagids[0];
+    // Query the minimum Tag ID for pose
+        int minid = tagids[0];
+        float min_x = msg->markers[0].pose.pose.position.x;
+        float min_y = msg->markers[0].pose.pose.position.y;
+        for (int i = 1; i < msg->markers.size(); i++) {
+        	if (msg->markers[i].pose.pose.position.x < min_x && msg->markers[i].pose.pose.position.y < min_y)
+        	{
+        		min_x = msg->markers[i].pose.pose.position.x;
+        		min_y = msg->markers[i].pose.pose.position.y;
+        		minid = tagids[i];
+        	}
+        }
         std::stringstream ss;
-        ss << id;
+        ss << minid;
 
         marker_frame = "ar_marker_" + ss.str();
+        std::cout<< "Marker Frame detected is: " << marker_frame << std::endl;
 		try
 		{
-			listener.waitForTransform("/camera_frame", marker_frame, ros::Time(0), ros::Duration(10.0) );
-			listener.lookupTransform("/camera_frame", marker_frame, ros::Time(0), predictedpose); 
+			listener.waitForTransform("/ardrone_base_frontcam", marker_frame, ros::Time(0), ros::Duration(10.0) );
+			listener.lookupTransform("/ardrone_base_frontcam", marker_frame, ros::Time(0), predictedpose); 
 		}
 		catch (tf::TransformException ex)
 		{
