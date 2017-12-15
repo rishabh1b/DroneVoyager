@@ -288,7 +288,7 @@ void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
 void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){
 	 // ROS_INFO("Came in Alvar message callback");	
 	 std::vector<int> tagids;
-	 if (msg->markers.size() == 0)
+	 if (msg->markers.size() != 4)
 	 	return;
 
 	 for (int i=0; i<msg->markers.size(); ++i) {
@@ -307,6 +307,8 @@ void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstP
         for (int i = 1; i < msg->markers.size(); i++) {
         	if (msg->markers[i].pose.pose.position.x < min_x)
         	{
+        		min_x2 = min_x;
+        		minid2 = minid;
         		min_x = msg->markers[i].pose.pose.position.x;
         		minid = tagids[i];
         	}
