@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+	<include file="$(find ardrone_control)/launch/ardrone_percept_test.launch">
+        </include>
+	<node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen"/>
+	<node name="tags" pkg="ardrone_control" type="tags" respawn="false" output="screen"/>
+	<node name="pass_window" pkg="ardrone_control" type="pass_window" respawn="false" output="screen"/>
+	<node name="keyin" pkg="ardrone_control" type="keyin" respawn="false" output="screen"/>
+</launch>

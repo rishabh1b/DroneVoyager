@@ -39,7 +39,7 @@ double takeofftime;
 geometry_msgs::Vector3 angular_velocity;
 geometry_msgs::Twist poseRateSP; /** velocitys setpoints */
 tf::StampedTransform transformPoseError; /** transform between /ardrone_base_link /poseSetPoint*/
-int near; /** near=1 if distance to setpoint is small */
+int c; /** near=1 if distance to setpoint is small */
 bool enablecontrol; /** to enable the control focus the terminal and press the C key on keyboard */
 
 tf::StampedTransform transformCameraToRobot;
