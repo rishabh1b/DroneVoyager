@@ -8,6 +8,8 @@
 #include <std_msgs/Char.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+#include <vector>
+#include <algorithm>
 
 #define KEYCODE_L 0x6C // lock slam mapping and save map
 #define KEYCODE_U 0x75 // unlock mapping
@@ -66,10 +68,19 @@ private:
     tf::Transform transformWindowCentre;
     tf::TransformListener listener;
     tf::TransformListener camera_to_base;
+    // New Parameters
+    int top_left_, top_right_, bottom_right_, bottom_left_;
+    std::vector<int> tagids;
+    bool first_time_four_tags;
+    std::vector<int> top_lefts, bottom_lefts, bottom_rights, top_rights;
+    int callbackARTagCounter;
+    bool four_tags_located, tagsIdentified;
 public:
 	GoThroughWindow();
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
+	void updateError(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
 	void getWindowCentre(const geometry_msgs::Point msg);
 	void Control(const ardrone_autonomy::Navdata navdata);
 	void keyCallBack(const std_msgs::Char key);
+	void IdentifyTags(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
 };

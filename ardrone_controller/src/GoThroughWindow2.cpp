@@ -8,7 +8,7 @@ GoThroughWindow::GoThroughWindow() {
 	// keySub_ = n_.subscribe("/keyinput", 1, &SubscribeAndPublish::keyCallBack, this);
 	// poseRateSetPointSub_ = n_.subscribe("poseRateSetPoint", 1, &SubscribeAndPublish::poseRateSPCallback, this);
 	navdataSub_ = n_.subscribe("ardrone/navdata", 1, &GoThroughWindow::Control, this);
-	arTagSubscriber_ = n_.subscribe("ar_pose_marker", 10, &GoThroughWindow::updatePose, this);
+	arTagSubscriber_ = n_.subscribe("ar_pose_marker", 10, &GoThroughWindow::updateError, this);
 	keySubscriber_ = n_.subscribe("/keyinput", 10, &GoThroughWindow::keyCallBack, this);
 	centre_found = false;
 	enablecontrol = false;
@@ -25,6 +25,10 @@ GoThroughWindow::GoThroughWindow() {
 	}
 	transformCameraToRobotUnStamped.setRotation(transformCameraToRobot.getRotation());
 	transformCameraToRobotUnStamped.setOrigin(transformCameraToRobot.getOrigin());
+	first_time_four_tags = true;
+	callbackARTagCounter = 0;
+	four_tags_located = false;
+	tagsIdentified = false;
 }
 void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 	timestamp = navdata.tm;
@@ -263,6 +267,47 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 	//} /** END OF THE FLYING STATE CONDITION */
 } /** end of the callback function for the class SubscriveAndPublish*/
 
+void GoThroughWindow::IdentifyTags(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
+	// Query the minimum Tag ID for pose
+    int minid = tagids[0];
+    int minid2 = tagids[0];
+    float min_x = msg->markers[0].pose.pose.position.x;
+    float min_x2 = 100000;
+    for (int i = 1; i < msg->markers.size(); i++) {
+    	if (msg->markers[i].pose.pose.position.x < min_x)
+    	{
+    		min_x2 = min_x;
+    		minid2 = minid;
+    		min_x = msg->markers[i].pose.pose.position.x;
+    		minid = tagids[i];
+    	}
+    	else if (msg->markers[i].pose.pose.position.x < min_x2) {
+				min_x2 = msg->markers[i].pose.pose.position.x;
+        		minid2 = tagids[i];
+    	}
+    }
+    if(msg->markers[minid2].pose.pose.position.y < msg->markers[minid].pose.pose.position.y)
+    	minid = minid2;
+    top_lefts.push_back(minid);
+    bottom_lefts.push_back(minid2);
+
+    int other_ids[2];
+    int j = 0;
+
+    for (int i = 0; i < 4; i++) {
+    	if(i != minid && i != minid2) {
+    		other_ids[j] = i;
+    		j = j + 1;
+    	}
+    }
+
+    if (msg->markers[other_ids[0]].pose.pose.position.y < msg->markers[other_ids[1]].pose.pose.position.y) {
+    	top_rights.push_back(other_ids[0]);
+    } else {
+    	bottom_rights.push_back(other_ids[1]);
+    }
+
+}
 void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
 	static tf::TransformBroadcaster br;
 	if (!centre_found && window_found_) {
@@ -270,80 +315,87 @@ void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
 		wind_x_ = msg.x;
 		wind_y_ = msg.y;
 		wind_z_ = msg.z;
-
- 	    transformWindowCentre.setOrigin( tf::Vector3(-msg.x, -msg.y, 0) );
-        tf::Quaternion q;
-        q.setRPY(1.57, 0, 1.57);
-        transformWindowCentre.setRotation(q);
-		centre_found = true;
-	}
-	if (window_found_) {
-		// ROS_INFO("Trying to broadcast target");
-		std::cout << marker_frame << std::endl;
-		if (!marker_frame.empty())
-			br.sendTransform(tf::StampedTransform(transformWindowCentre, ros::Time::now(), marker_frame, "target"));	
-	}
+}
 }
 
-void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){
+void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){
 	 // ROS_INFO("Came in Alvar message callback");	
-	 std::vector<int> tagids;
+	static tf::TransformBroadcaster br;
+	 if (msg->markers.size() != 4 && !window_found_)
+	 	return;
+
 	 if (msg->markers.size() == 0)
 	 	return;
 
-	 for (int i=0; i<msg->markers.size(); ++i) {
+    if (!first_time_four_tags) { 
+    	if (!tagsIdentified) {
+	    	for (int i=0; i<msg->markers.size(); ++i) {
+	        tagids.push_back(msg->markers[i].id);
+	   	 }
+	    	IdentifyTags(msg);
+	    	callbackARTagCounter++;
+	    	if (callbackARTagCounter > 100) {
+	    		// Get the locations
+	    		std::sort(top_lefts.begin(), top_lefts.end());
+	    		std::sort(bottom_lefts.begin(), bottom_lefts.end());
+	    		std::sort(bottom_rights.begin(), bottom_rights.end());
+	    		std::sort(top_rights.begin(), top_rights.end());
 
-        /* WHAT IF NOT ALL 4 TAGS ARE DETECTED? 3 IS ENOUGH TO FIND WINDOW CENTER. LOOK AT USING BUNDLES*/
-        /* WHAT IF THE 5 TAG IS ACCIDENTALLY DETECTED?*/
-        /* HOW TO DEFINE THE WINDO TAGS SEPARATELY FROM 5TH TAG?*/
-        tagids.push_back(msg->markers[i].id);
+	    		top_left_ = top_lefts[49];
+	    		top_right_ = top_rights[49];
+	    		bottom_left_ = bottom_lefts[49];
+	    		bottom_right_ = bottom_rights[49];
+	    		tagsIdentified = true;
+
+	    	    std::cout<<"Top Left :" << top_left_ <<std::endl;
+	    		std::cout<<"Top Right :" << top_right_ <<std::endl;
+	    		std::cout<<"bottom right :" << bottom_right_<<std::endl;
+	    		std::cout<<"Bottom Left :" << bottom_left_ <<std::endl;
+	    	}
+	    }
+	    else { // Update Error
+	    float x, y, z;
+	    int curr_id = msg->markers[0].id;
+
+	    if (curr_id == top_left_) {
+	    		x = msg->markers[0].pose.pose.position.x + wind_x_;
+	    		y = msg->markers[0].pose.pose.position.y + wind_y_;
+	    	}
+    	else if (curr_id == top_right_) {
+	    		x = msg->markers[0].pose.pose.position.x - wind_x_;
+	    		y = msg->markers[0].pose.pose.position.y + wind_y_;
+	    	}
+	    else if(curr_id == bottom_right_) {
+	    		x = msg->markers[0].pose.pose.position.x - wind_x_;
+	    		y = msg->markers[0].pose.pose.position.y - wind_y_;
+	    	}
+
+    	else if(curr_id == bottom_left_) {
+	    		x = msg->markers[0].pose.pose.position.x + wind_x_;
+	    		y = msg->markers[0].pose.pose.position.y - wind_y_;
+	    	}
+	    	else {
+	    		std::cout << "We have a problem" << std::endl;
+	    	}
+
+	    float total_z;
+	    int j;
+	    for (j = 0; j < msg->markers.size(); j++){
+	    	total_z += msg->markers[0].pose.pose.position.z;
+	    }
+	    z = total_z / (j + 1);
+	    transformWindowCentre.setOrigin( tf::Vector3(x, y, z) );
+        tf::Quaternion q;
+        q.setRPY(0, 0, 0);
+        transformWindowCentre.setRotation(q);
+        br.sendTransform(tf::StampedTransform(transformWindowCentre, ros::Time::now(), "/ardrone_base_frontcam", "target"));
+	    }
+    	
+    } else { // For Inidicating to stop in place hover
+    	first_time_four_tags = false;
+    	window_found_ = true;
     }
 
-    // Query the minimum Tag ID for pose
-        int minid = tagids[0];
-        int minid2 = tagids[0];
-        float min_x = msg->markers[0].pose.pose.position.x;
-        float min_x2 = 100000;
-        for (int i = 1; i < msg->markers.size(); i++) {
-        	if (msg->markers[i].pose.pose.position.x < min_x)
-        	{
-        		min_x = msg->markers[i].pose.pose.position.x;
-        		minid = tagids[i];
-        	}
-        	else if (msg->markers[i].pose.pose.position.x < min_x2) {
-        		min_x2 = msg->markers[i].pose.pose.position.x;
-        		minid2 = tagids[i];
-        	}
-        }
-        if(msg->markers[minid2].pose.pose.position.y < msg->markers[minid].pose.pose.position.y)
-        	minid = minid2;
-
-
-        std::stringstream ss;
-        ss << minid;
-
-        marker_frame = "ar_marker_" + ss.str();
-        // std::cout<< "Marker Frame detected is: " << marker_frame << std::endl;
-		try
-		{
-			listener.waitForTransform("/ardrone_base_frontcam", marker_frame, ros::Time(0), ros::Duration(10.0) );
-			listener.lookupTransform("/ardrone_base_frontcam", marker_frame, ros::Time(0), predictedpose); 
-		}
-		catch (tf::TransformException ex)
-		{
-				ROS_INFO("Lookup error in ardrone_marker");
-				ROS_ERROR("%s",ex.what());  /** handle errors */
-		}
-		// Assuming the top left tag is the first one. Need to modify this for robustness
-		tf::Vector3 orig = predictedpose.getOrigin();
-		tf::Vector3 newOrig;
-		newOrig.setX(orig.getX() + wind_x_);
-		newOrig.setY(orig.getY() + wind_y_);
-		newOrig.setZ(wind_z_);
-		// Transform the pose to the window centre point
-		predictedpose.setOrigin(newOrig);
-		// tf::transform predictedposetrans = predictedpose.inverse();
-		window_found_ = true;
 }
 
 void GoThroughWindow::keyCallBack(const std_msgs::Char key)

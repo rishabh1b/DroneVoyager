@@ -145,7 +145,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(openloop src/main.cpp)
  add_executable(pass_window src/GoThroughWindow.cpp)
-
+ add_executable(pass_window2 src/GoThroughWindow2.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -223,4 +223,4 @@ target_link_libraries(tags ${catkin_LIBRARIES})
 #add_dependencies(tags beginner_tutorials_generate_messages_cpp)
 
 add_executable(keyin src/keyinput.cpp)
-target_link_libraries(tags ${catkin_LIBRARIES})
+target_link_libraries(keyin ${catkin_LIBRARIES})
