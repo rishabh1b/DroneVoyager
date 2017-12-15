@@ -8,7 +8,7 @@ project(ardrone_control)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-cvg_sim_gazebo
+  cvg_sim_gazebo
   cvg_sim_gazebo_plugins
   cvg_sim_msgs
   geometry_msgs
@@ -16,7 +16,7 @@ cvg_sim_gazebo
   nav_msgs
   roscpp
   rospy
-tf
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -220,4 +220,7 @@ target_link_libraries(pass_window
 
 add_executable(tags src/tags.cpp)
 target_link_libraries(tags ${catkin_LIBRARIES})
-add_dependencies(tags beginner_tutorials_generate_messages_cpp)
+#add_dependencies(tags beginner_tutorials_generate_messages_cpp)
+
+add_executable(keyin src/keyinput.cpp)
+target_link_libraries(tags ${catkin_LIBRARIES})

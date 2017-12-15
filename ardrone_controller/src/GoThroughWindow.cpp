@@ -9,8 +9,9 @@ GoThroughWindow::GoThroughWindow() {
 	// poseRateSetPointSub_ = n_.subscribe("poseRateSetPoint", 1, &SubscribeAndPublish::poseRateSPCallback, this);
 	navdataSub_ = n_.subscribe("ardrone/navdata", 1, &GoThroughWindow::Control, this);
 	arTagSubscriber_ = n_.subscribe("ar_pose_marker", 10, &GoThroughWindow::updatePose, this);
+	keySubscriber_ = n_.subscribe("/keyinput", 10, &GoThroughWindow::keyCallBack, this);
 	centre_found = false;
-
+	enablecontrol = false;
 	// Get the Static Transform
 	try
 	{
@@ -34,11 +35,11 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 		takeofftime = timestamp;
 		// ROS_INFO("Came in control callback");
 	}
-	//else 
-	//{
-		if (true)//(navdata.state == 3 ) || (navdata.state == 4) || ( navdata.state == 8)) /** 3=flying 8=transition to hover, 4= hovering */
+	else 
+	{
+		if ((navdata.state == 3 ) || (navdata.state == 4) || ( navdata.state == 8)) /** 3=flying 8=transition to hover, 4= hovering */
 		{
-			if (true)//((timestamp - takeofftime)/1000000.0) > 2) /** past 2 seconds of stable flight do the control:  */ 
+			if (((timestamp - takeofftime)/1000000.0) > 2) /** past 2 seconds of stable flight do the control:  */ 
 			{
 				/** GET TRANSFORM */
 				//Populate transformPoseError here
@@ -93,8 +94,8 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 				error.linear.z=altitudeErr;
 				error.angular.x=0;
 				error.angular.y=0;
-				//error.angular.z=yawErr; pi/2  error is the angle between the Camera frame and the Robot Frame
-				error.angular.z=0;
+				error.angular.z=yawErr; //pi/2  error is the angle between the Camera frame and the Robot Frame
+				//error.angular.z=0;
 				
 				errpub_.publish(error); 
 										
@@ -193,8 +194,8 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 					controlsig.linear.y = -spRoll / euler_angle_max ; /** roll é rotx, mas não confunda com o comando.... */
 					
 					/** control signals not used, but must be != 0 to stay out of hover mode */
-					controlsig.angular.x = 1 ;   
-					controlsig.angular.y = 1 ;		
+					controlsig.angular.x = 0 ;   
+					controlsig.angular.y = 0 ;		
 				}
 
 		
@@ -253,7 +254,7 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 
 			} /** END OF THE FLIGHT TIME CONDITION */
 		} /** END OF THE FLYING STATE CONDITION */	 
-	//} /** END OF THE FLYING STATE CONDITION */
+	} /** END OF THE FLYING STATE CONDITION */
 } /** end of the callback function for the class SubscriveAndPublish*/
 
 void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
@@ -341,27 +342,27 @@ void GoThroughWindow::updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstP
 		window_found_ = true;
 }
 
-void GoTroughWindow::keyCallBack(const std_msgs::Char key)
+void GoThroughWindow::keyCallBack(const std_msgs::Char key)
 	{
 		switch(key.data)
 		{
 			case KEYCODE_G:
-				enablecontrol =1;
+				enablecontrol =true;
 				ROS_INFO("Control enabled. Drone holding place");
 				break;   
 				
 			case KEYCODE_0:
-				enablecontrol =1;
+				enablecontrol =true;
 				ROS_INFO("Control enabled. Drone holding place");
 				break;  
 
 			case KEYCODE_P:
-				enablecontrol =1;
+				enablecontrol =true;
 				ROS_INFO("Control enabled. Drone following path");
 				break;  
 
 			case KEYCODE_M:
-				enablecontrol =0;
+				enablecontrol =false;
 				ROS_INFO("Control disabled. Drone back in manual");
 				break;   
 		}

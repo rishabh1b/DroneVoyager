@@ -54,6 +54,7 @@ private:
 	ros::Subscriber navdataSub_ ;
 	ros::Subscriber arTagSubscriber_;
 	ros::Subscriber windowCentreSubscriber_;
+	ros::Subscriber keySubscriber_;
 	tf::StampedTransform predictedpose; /**  pose predicted by the slam node */
 	tf::Transform startTransform; /** the tranform between /map and /startFrame, wich is the pose at the first second of flight */
 	tf::Transform SPTransform; /** the tranform between /startFrame and /PoseSetPoint, witch is the set point related to the start frame */
@@ -70,5 +71,5 @@ public:
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
 	void getWindowCentre(const geometry_msgs::Point msg);
 	void Control(const ardrone_autonomy::Navdata navdata);
-	void eyCallBack(const std_msgs::Char key)
+	void keyCallBack(const std_msgs::Char key);
 };
