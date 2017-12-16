@@ -10,6 +10,8 @@
 #include <tf/transform_broadcaster.h>
 #include <vector>
 #include <algorithm>
+#include <cmath>
+#include <math.h>
 
 #define KEYCODE_L 0x6C // lock slam mapping and save map
 #define KEYCODE_U 0x75 // unlock mapping
@@ -75,6 +77,7 @@ private:
     std::vector<int> top_lefts, bottom_lefts, bottom_rights, top_rights;
     int callbackARTagCounter;
     bool four_tags_located, tagsIdentified;
+    float vel_max, dist_max;
 public:
 	GoThroughWindow();
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
