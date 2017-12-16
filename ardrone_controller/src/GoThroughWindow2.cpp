@@ -274,44 +274,47 @@ void GoThroughWindow::IdentifyTags(const ar_track_alvar_msgs::AlvarMarkers::Cons
 		return;
  
     callbackARTagCounter++;
-    int minid = tagids[0];
-    int minid2 = tagids[1];
+    int minindex = 0;
+    int minindex2 = 0;
     float min_x = msg->markers[0].pose.pose.position.x;
     float min_x2 = 100000;
     for (int i = 1; i < msg->markers.size(); i++) {
     	if (msg->markers[i].pose.pose.position.x < min_x)
     	{
     		min_x2 = min_x;
-    		minid2 = minid;
+    		minindex2 = minindex;
     		min_x = msg->markers[i].pose.pose.position.x;
-    		minid = tagids[i];
+    		minindex = i;
     	}
     	else if (msg->markers[i].pose.pose.position.x < min_x2) {
 				min_x2 = msg->markers[i].pose.pose.position.x;
-        		minid2 = tagids[i];
+        		minindex2 = i;
     	}
     }
-    if(msg->markers[minid2].pose.pose.position.y < msg->markers[minid].pose.pose.position.y)
-    	minid = minid2;
-    top_lefts.push_back(minid);
-    bottom_lefts.push_back(minid2);
+    if(msg->markers[minindex2].pose.pose.position.y < msg->markers[minindex].pose.pose.position.y) {
+    	int temp = minindex;
+    	minindex = minindex2;
+    	minindex2 = temp;
+    }
+    top_lefts.push_back(tagids[minindex]);
+    bottom_lefts.push_back(tagids[minindex2]);
 
     int other_ids[2];
     int j = 0;
 
     for (int i = 0; i < msg->markers.size(); i++) {
-    	if(tagids[i] != minid && tagids[i] != minid2) {
-    		other_ids[j] = tagids[i];
+    	if(i != minindex && i != minindex2) {
+    		other_ids[j] = i;
     		j = j + 1;
     	}
     }
 
     if (msg->markers[other_ids[0]].pose.pose.position.y < msg->markers[other_ids[1]].pose.pose.position.y) {
-    	top_rights.push_back(other_ids[0]);
-    	bottom_rights.push_back(other_ids[1]);
+    	top_rights.push_back(tagids[other_ids[0]]);
+    	bottom_rights.push_back(tagids[other_ids[1]]);
     } else {
-    	top_rights.push_back(other_ids[1]);
-    	bottom_rights.push_back(other_ids[0]);
+    	top_rights.push_back(tagids[other_ids[1]]);
+    	bottom_rights.push_back(tagids[other_ids[0]]);
     }
 
 }
