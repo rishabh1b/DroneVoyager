@@ -268,9 +268,14 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 } /** end of the callback function for the class SubscriveAndPublish*/
 
 void GoThroughWindow::IdentifyTags(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg) {
+	ROS_INFO("Came inside the Identify Tags");
 	// Query the minimum Tag ID for pose
+	if(msg->markers.size() != 4)
+		return;
+ 
+    callbackARTagCounter++;
     int minid = tagids[0];
-    int minid2 = tagids[0];
+    int minid2 = tagids[1];
     float min_x = msg->markers[0].pose.pose.position.x;
     float min_x2 = 100000;
     for (int i = 1; i < msg->markers.size(); i++) {
@@ -294,22 +299,23 @@ void GoThroughWindow::IdentifyTags(const ar_track_alvar_msgs::AlvarMarkers::Cons
     int other_ids[2];
     int j = 0;
 
-    for (int i = 0; i < 4; i++) {
-    	if(i != minid && i != minid2) {
-    		other_ids[j] = i;
+    for (int i = 0; i < msg->markers.size(); i++) {
+    	if(tagids[i] != minid && tagids[i] != minid2) {
+    		other_ids[j] = tagids[i];
     		j = j + 1;
     	}
     }
 
     if (msg->markers[other_ids[0]].pose.pose.position.y < msg->markers[other_ids[1]].pose.pose.position.y) {
     	top_rights.push_back(other_ids[0]);
-    } else {
     	bottom_rights.push_back(other_ids[1]);
+    } else {
+    	top_rights.push_back(other_ids[1]);
+    	bottom_rights.push_back(other_ids[0]);
     }
 
 }
 void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
-	static tf::TransformBroadcaster br;
 	if (!centre_found && window_found_) {
 		ROS_INFO("Populating window values");
 		wind_x_ = msg.x;
@@ -321,6 +327,7 @@ void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
 void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){
 	 // ROS_INFO("Came in Alvar message callback");	
 	static tf::TransformBroadcaster br;
+	std::cout << "Markers size: " << msg->markers.size() << std::endl;
 	 if (msg->markers.size() != 4 && first_time_four_tags)
 	 	return;
 
@@ -334,18 +341,17 @@ void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::Const
 	        tagids.push_back(msg->markers[i].id);
 	   	 }
 	    	IdentifyTags(msg);
-	    	callbackARTagCounter++;
-	    	if (callbackARTagCounter > 10) {
+	    	if (callbackARTagCounter > 100) {
 	    		// Get the locations
 	    		std::sort(top_lefts.begin(), top_lefts.end());
 	    		std::sort(bottom_lefts.begin(), bottom_lefts.end());
 	    		std::sort(bottom_rights.begin(), bottom_rights.end());
 	    		std::sort(top_rights.begin(), top_rights.end());
 
-	    		top_left_ = top_lefts[5];
-	    		top_right_ = top_rights[5];
-	    		bottom_left_ = bottom_lefts[5];
-	    		bottom_right_ = bottom_rights[5];
+	    		top_left_ = top_lefts[49];
+	    		top_right_ = top_rights[49];
+	    		bottom_left_ = bottom_lefts[49];
+	    		bottom_right_ = bottom_rights[49];
 	    		tagsIdentified = true;
 
 	    	    std::cout<<"Top Left :" << top_left_ <<std::endl;
@@ -357,6 +363,11 @@ void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::Const
 	    else { // Update Error
 	    float x, y, z;
 	    int curr_id = msg->markers[0].id;
+
+	    std::cout<<"Top Left :" << top_left_ <<std::endl;
+		std::cout<<"Top Right :" << top_right_ <<std::endl;
+		std::cout<<"bottom right :" << bottom_right_<<std::endl;
+		std::cout<<"Bottom Left :" << bottom_left_ <<std::endl;
 
 	    if (curr_id == top_left_) {
 	    		x = msg->markers[0].pose.pose.position.x + wind_x_;
