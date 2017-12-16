@@ -1,6 +1,6 @@
 #include "ardrone_controller/goThroughWindow.h"
 
-#define tolerance 0.1
+#define tolerance 10
 
 GoThroughWindow::GoThroughWindow() {
 	errpub_ = n_.advertise<geometry_msgs::Twist>("/controlerror", 1);
@@ -32,241 +32,164 @@ GoThroughWindow::GoThroughWindow() {
 	four_tags_located = false;
 	tagsIdentified = false;
 	isFirstErrorCallback = true;
+	targetPublished = false;
+    vel_max = 0.1;
+	dist_max = 3.5;
+	yaw_threshold = 5;
+	z_threshold = 0.1;
+	y_threshold = 0.1;
+
 }
 void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
-	timestamp = navdata.tm;
-	
-	/** CHECK IF THE DRONE IS FLYING. ASSUMES THE DRONE WILL TAKE OFF AT [0 0] */ 
-	if  (true)//(navdata.state == 2) || (navdata.state == 7)) /** 2 = landed, ready to take off. 7 = taking off */
-	{	
-		takeofftime = timestamp;
-		// ROS_INFO("Came in control callback");
+/** GET TRANSFORM */
+	//Populate transformPoseError here
+	ROS_INFO("In new control");
+	if (!targetPublished)
+		return;
+	try
+	{
+		listener.waitForTransform("/ardrone_base_link", "target", ros::Time(0), ros::Duration(10.0) );
+		listener.lookupTransform("/ardrone_base_link", "target", ros::Time(0), transformPoseError); /** gets the last published transformation */
 	}
-	//else 
-	//{
-		if (true)//(navdata.state == 3 ) || (navdata.state == 4) || ( navdata.state == 8)) /** 3=flying 8=transition to hover, 4= hovering */
-		{
-			if (true)//((timestamp - takeofftime)/1000000.0) > 2) /** past 2 seconds of stable flight do the control:  */ 
-			{
-				/** GET TRANSFORM */
-				//Populate transformPoseError here
-				try
-				{
-					//listener.waitForTransform("/ardrone_base_frontcam", "target", ros::Time(0), ros::Duration(10.0) );
-					//listener.lookupTransform("/ardrone_base_frontcam", "target", ros::Time(0), transformPoseError); /** gets the last published transformation */
-					listener.waitForTransform("/ardrone_base_link", "target", ros::Time(0), ros::Duration(10.0) );
-					listener.lookupTransform("/ardrone_base_link", "target", ros::Time(0), transformPoseError); /** gets the last published transformation */
-				}
-					
-				catch (tf::TransformException ex)
-				{
-					ROS_ERROR("%s",ex.what());  /** handle errors */
-				}
-				
-				tf::Quaternion quat = transformPoseError.getRotation();
-				tf::Vector3 trans = transformPoseError.getOrigin();
-
-                // Get Unstamped
-                /*
-				tf::Transform currentPoseError;
-				currentPoseError.setRotation(quat);
-				currentPoseError.setOrigin(trans);
-
-                // Convert the error to the Robot frame
-				currentPoseError = transformCameraToRobotUnStamped * currentPoseError;*/
-
-				tf::Transform currentPoseError;
-				currentPoseError.setRotation(quat);
-				currentPoseError.setOrigin(trans);
-
-				/** INPUTS */
-				double linvx; linvx = navdata.vx/1000.0; /** linear velocity in the x axis (in m/sec) */
-				double linvy; linvy = navdata.vy/1000.0; /** linear velocity in the x axis (in m/sec) */
-				
-				/** navdata.vx and .vy are linear velocitys in coordinates of the body frame. 
-				 */
-				 
-				double roll; /** euler angles for rotation */
-				double pitch;
-				double yawErr;
-				
-				tf::Matrix3x3 R=tf::Matrix3x3(currentPoseError.getRotation());  /** get rotation matrix from quaternion in transform */
-				R.getRPY(roll, pitch, yawErr);	 /** get euler angles */
-				
-				double altitudeErr;
-				altitudeErr = currentPoseError.getOrigin().z();
-				
-				Eigen::Vector2d xyErr;
-				xyErr << currentPoseError.getOrigin().x() , currentPoseError.getOrigin().y() ;
-				
-				
-				geometry_msgs::Twist error;
-				
-				error.linear.x=xyErr(0);
-				error.linear.y=xyErr(1);
-				error.linear.z=altitudeErr;
-				error.angular.x=0;
-				error.angular.y=0;
-				error.angular.z=0; //pi/2  error is the angle between the Camera frame and the Robot Frame
-				//error.angular.z=0;
-				
-				errpub_.publish(error); 
-										
-				
-				
-				/** CONTROLLER */
-				
-				geometry_msgs::Twist controlsig;
-				
-				std::cout << "Yaw Error: " << yawErr << std::endl;
-				/** it will publish control signals on the topic /cmd_vel of message type geometry_msgs::Twist
-				* geometry_msg::twist tem seguinte forma
-				* 		geometry_msg::vector3	linear
-				*	 	geometry_msg::vector3	angular
-				* 
-				* geometry_msg::vector3 tem seguinte forma
-				* 		float64 x
-				* 		float64 y
-				* 		float64 z    (tudo minusculo)  */
-
-							
-							
-				/** CALCULATES CONTROL SIGNALS */
-
-
-				/** YAW control law */
-							
-				double spYawRate;
-				
-				
-				if (((170 < yawErr) && (yawErr <190)) || ((-190 < yawErr) && (yawErr < -170)))
-				{
-					yawErr = 170.0;
-				}
-				else if (190 < yawErr) 
-				{
-					yawErr = yawErr -360.0;
-				}
-				else if (yawErr < -190)
-				{
-					yawErr = yawErr +360.0;
-				}
-				
-				spYawRate = kpyaw *yawErr - kdyaw * angular_velocity.z ;
-				
-				controlsig.angular.z = spYawRate/control_yawrate_max;
-				
-				
-				
-				
-				/** ALTITUDE control */
-
-				double spAltdRate;
-				
-				spAltdRate= kpaltd*altitudeErr;
-				
-				controlsig.linear.z = spAltdRate/(control_vz_max/1000);
-				
-				
-									
-				/** HORIZONTAL POSITION control */
-				
-				/** if distace is less than 15cm than it is near and will use hovermode.
-				 * if it is in hover mode (near=1), and distance increses to more than 30cm, then leave hovermode */
-				 
-				if (sqrt(xyErr(1)*xyErr(1)+xyErr(0)*xyErr(0))<near_lower_threshold)
-				{
-					near = 1;
-				}
-				else
-				{
-					if (sqrt(xyErr(1)*xyErr(1)+xyErr(0)*xyErr(0))>near_upper_threshold)
-					{
-						near=0;
-					}
-				}
-				
-				
-				if (near) /** if it is in hover null all control signals */
-				{
-					// Get into Hover mode
-					controlsig.linear.x = 0;
-					controlsig.linear.y = 0;
-					controlsig.angular.x = 0;   
-					controlsig.angular.y = 0;	
-				}
-				else /** if it is not in hover mode calculates all control signals using PD law */
-				{						
-					double spPitch; /** control signals in rad */
-					double spRoll;
-					
-					spPitch = K1 * ( xyErr(0) - K2 * linvx); /** control law */
-					spRoll = - K1 * ( xyErr(1) - K2 * linvy);
-					
-					controlsig.linear.x = spPitch / euler_angle_max; /** pitch é roty, mas não confunda com o comando.... */
-					controlsig.linear.y = -spRoll / euler_angle_max ; /** roll é rotx, mas não confunda com o comando.... */
-					
-					/** control signals not used, but must be != 0 to stay out of hover mode */
-					controlsig.angular.x = 0 ;   
-					controlsig.angular.y = 0 ;		
-				}
-
 		
-				
-				/** limit the control signals (talvez não seja necessário) */
-				
+	catch (tf::TransformException ex)
+	{
+		ROS_ERROR("%s",ex.what());  /** handle errors */
+	}
+	
+	tf::Quaternion quat = transformPoseError.getRotation();
+	tf::Vector3 trans = transformPoseError.getOrigin();
 
-				if (controlsig.angular.z > 1)
-				{
-					controlsig.angular.z =1;
-				}
-				if (controlsig.angular.z < -1)
-				{
-					controlsig.angular.z =-1;
-				}
-									
-				if (controlsig.linear.x > 1)
-				{
-					controlsig.linear.x =1;
-				}
-				if (controlsig.linear.x < -1)
-				{
-					controlsig.linear.x =-1;
-				}
-				
-				if (controlsig.linear.y > 1)
-				{
-					controlsig.linear.y =1;
-				}
-				if (controlsig.linear.y < -1)
-				{
-					controlsig.linear.y =-1;
-				}
-				
-				if (controlsig.linear.z > 1)
-				{
-					controlsig.linear.z =1;
-				}
-				if (controlsig.linear.z < -1)
-				{
-					controlsig.linear.z =-1;
-				}
-				
-				
-				/** PUBLISH CONTROL SIGNALS */
-				// False values
-				fakecmdpub_.publish(controlsig);
-				
-				if (enablecontrol)
-				{
-					 cmdpub_.publish(controlsig); 
-				}
-				
-				/** end of the control step */
 
-			} /** END OF THE FLIGHT TIME CONDITION */
-		} /** END OF THE FLYING STATE CONDITION */	 
-	//} /** END OF THE FLYING STATE CONDITION */
+	tf::Transform currentPoseError;
+	currentPoseError.setRotation(quat);
+	currentPoseError.setOrigin(trans);
+
+	double yawErr = acos(trans.getX() / (sqrt(std::pow(trans.getX(),2) + std::pow(trans.getY(),2)  + std::pow(trans.getZ(),2) ))) * 180 / 3.146;
+	
+	double altitudeErr;
+	altitudeErr = currentPoseError.getOrigin().z();
+	
+	Eigen::Vector2d xyErr;
+	xyErr << currentPoseError.getOrigin().x() , currentPoseError.getOrigin().y() ;		
+	geometry_msgs::Twist error;
+	
+	error.linear.x=xyErr(0);
+	error.linear.y=xyErr(1);
+	error.linear.z=altitudeErr;
+	error.angular.x=0;
+	error.angular.y=0;
+	error.angular.z=yawErr; 
+	
+	errpub_.publish(error); 
+							
+	
+	
+	/** CONTROLLER */
+	
+	geometry_msgs::Twist controlsig;
+	
+	
+	/** ALTITUDE control */
+	if (std::abs(yawErr) > yaw_threshold)
+		controlsig.angular.z = yawErr * 0.1 / 60; // TODO: put a variable to this								 
+	else if (std::abs(altitudeErr) > z_threshold) 
+		controlsig.linear.z = vel_max * altitudeErr / 0.5; // TODO: put a variable for this
+	else if (std::abs(y) > y_threshold) 
+		controlsig.linear.y = vel_max * xyErr(1) / dist_max;
+	else
+		controlsig.linear.x = vel_max * xyErr(0) / dist_max;
+
+	
+
+	/** HORIZONTAL POSITION control */
+	
+	/** if distace is less than 15cm than it is near and will use hovermode.
+	 * if it is in hover mode (near=1), and distance increses to more than 30cm, then leave hovermode */
+	 
+	/*if (sqrt(xyErr(1)*xyErr(1)+xyErr(0)*xyErr(0))<near_lower_threshold)
+	{
+		near = 1;
+	}
+	else
+	{
+		if (sqrt(xyErr(1)*xyErr(1)+xyErr(0)*xyErr(0))>near_upper_threshold)
+		{
+			near=0;
+		}
+	}*/
+	
+	
+	/*if (near) // For later
+	{
+		// Get into Hover mode
+		controlsig.linear.x = 0;
+		controlsig.linear.y = 0;
+		controlsig.angular.x = 0;   
+		controlsig.angular.y = 0;	
+	}*/
+
+	// else /** if it is not in hover mode calculates all control signals using PD law */
+	//{						
+		
+		/** control signals not used, but must be != 0 to stay out of hover mode */
+		controlsig.angular.x = 0 ;   
+		controlsig.angular.y = 0 ;		
+	//}
+
+
+	
+	/** limit the control signals (talvez não seja necessário) */
+	
+
+	if (controlsig.angular.z > 1)
+	{
+		controlsig.angular.z =1;
+	}
+	if (controlsig.angular.z < -1)
+	{
+		controlsig.angular.z =-1;
+	}
+						
+	if (controlsig.linear.x > 1)
+	{
+		controlsig.linear.x =1;
+	}
+	if (controlsig.linear.x < -1)
+	{
+		controlsig.linear.x =-1;
+	}
+	
+	if (controlsig.linear.y > 1)
+	{
+		controlsig.linear.y =1;
+	}
+	if (controlsig.linear.y < -1)
+	{
+		controlsig.linear.y =-1;
+	}
+	
+	if (controlsig.linear.z > 1)
+	{
+		controlsig.linear.z =1;
+	}
+	if (controlsig.linear.z < -1)
+	{
+		controlsig.linear.z =-1;
+	}
+	
+	
+	/** PUBLISH CONTROL SIGNALS */
+	// False values
+	fakecmdpub_.publish(controlsig);
+	
+	if (enablecontrol)
+	{
+		 cmdpub_.publish(controlsig); 
+	}
+	
+		
+		/** end of the control step */
 } /** end of the callback function for the class SubscriveAndPublish*/
 
 void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
@@ -326,6 +249,7 @@ void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::Const
 	    	x = oldx;
 	    	y = oldy;
 	    	z = oldz;
+	    	// targetPublished = false;
 	    }
         
         isFirstErrorCallback = false;
@@ -335,6 +259,7 @@ void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::Const
         q.setRPY(0, 0, 0);
         transformWindowCentre.setRotation(q);
         br.sendTransform(tf::StampedTransform(transformWindowCentre, ros::Time::now(), "/ardrone_base_frontcam", "target"));
+        targetPublished = true;
     } else { // For Inidicating to stop in place hover
     	first_time_four_tags = false;
     	window_found_ = true;

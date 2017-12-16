@@ -80,6 +80,8 @@ private:
     float vel_max, dist_max;
     float oldx, oldy, oldz, x, y, z;
     bool isFirstErrorCallback;
+    bool targetPublished;
+    float yaw_threshold, z_threshold, y_threshold;
 public:
 	GoThroughWindow();
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
