@@ -78,6 +78,8 @@ private:
     int callbackARTagCounter;
     bool four_tags_located, tagsIdentified;
     float vel_max, dist_max;
+    float oldx, oldy, oldz, x, y, z;
+    bool isFirstErrorCallback;
 public:
 	GoThroughWindow();
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
