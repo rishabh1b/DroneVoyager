@@ -321,12 +321,13 @@ void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
 void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg){
 	 // ROS_INFO("Came in Alvar message callback");	
 	static tf::TransformBroadcaster br;
-	 if (msg->markers.size() != 4 && !window_found_)
+	 if (msg->markers.size() != 4 && first_time_four_tags)
 	 	return;
 
 	 if (msg->markers.size() == 0)
 	 	return;
 
+	ROS_INFO("Update Error Callback");
     if (!first_time_four_tags) { 
     	if (!tagsIdentified) {
 	    	for (int i=0; i<msg->markers.size(); ++i) {
@@ -334,17 +335,17 @@ void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::Const
 	   	 }
 	    	IdentifyTags(msg);
 	    	callbackARTagCounter++;
-	    	if (callbackARTagCounter > 100) {
+	    	if (callbackARTagCounter > 10) {
 	    		// Get the locations
 	    		std::sort(top_lefts.begin(), top_lefts.end());
 	    		std::sort(bottom_lefts.begin(), bottom_lefts.end());
 	    		std::sort(bottom_rights.begin(), bottom_rights.end());
 	    		std::sort(top_rights.begin(), top_rights.end());
 
-	    		top_left_ = top_lefts[49];
-	    		top_right_ = top_rights[49];
-	    		bottom_left_ = bottom_lefts[49];
-	    		bottom_right_ = bottom_rights[49];
+	    		top_left_ = top_lefts[5];
+	    		top_right_ = top_rights[5];
+	    		bottom_left_ = bottom_lefts[5];
+	    		bottom_right_ = bottom_rights[5];
 	    		tagsIdentified = true;
 
 	    	    std::cout<<"Top Left :" << top_left_ <<std::endl;
