@@ -316,6 +316,19 @@ void GoThroughWindow::IdentifyTags(const ar_track_alvar_msgs::AlvarMarkers::Cons
     	top_rights.push_back(tagids[other_ids[1]]);
     	bottom_rights.push_back(tagids[other_ids[0]]);
     }
+    std::cout<<"minindex :" << tagids[minindex] <<std::endl;
+	std::cout<<"minindex2 :" << tagids[minindex2] <<std::endl;
+	std::cout<<"other_id_1 :" << tagids[other_ids[0]] <<std::endl;
+	std::cout<<"other_id_2 :" << tagids[other_ids[1]] <<std::endl;  
+
+	std::cout<<"minindex_x :" << msg->markers[minindex].pose.pose.position.x<< ", minindex_y :"<< msg->markers[minindex].pose.pose.position.y << std::endl;
+	std::cout<<"minindex2_x :" << msg->markers[minindex2].pose.pose.position.x<< ", minindex2_y :"<< msg->markers[minindex2].pose.pose.position.y << std::endl;
+	std::cout<<"otherid1_x :" << msg->markers[other_ids[0]].pose.pose.position.x<< ", otherid1_y :"<< msg->markers[other_ids[0]].pose.pose.position.y << std::endl;
+	std::cout<<"otherid2_x :" << msg->markers[other_ids[1]].pose.pose.position.x<< ", otherid2_y :"<< msg->markers[other_ids[1]].pose.pose.position.y << std::endl;  
+
+
+	std::cout<<"top_right_tag_id :" << top_rights[callbackARTagCounter-1] <<std::endl;
+	std::cout<<"bottom_right_tag_id:" << bottom_rights[callbackARTagCounter-1] <<std::endl;  
 
 }
 void GoThroughWindow::getWindowCentre(const geometry_msgs::Point msg) {
@@ -344,17 +357,17 @@ void GoThroughWindow::updateError(const ar_track_alvar_msgs::AlvarMarkers::Const
 	        tagids.push_back(msg->markers[i].id);
 	   	 }
 	    	IdentifyTags(msg);
-	    	if (callbackARTagCounter > 100) {
+	    	if (callbackARTagCounter > 10) {
 	    		// Get the locations
 	    		std::sort(top_lefts.begin(), top_lefts.end());
 	    		std::sort(bottom_lefts.begin(), bottom_lefts.end());
 	    		std::sort(bottom_rights.begin(), bottom_rights.end());
 	    		std::sort(top_rights.begin(), top_rights.end());
 
-	    		top_left_ = top_lefts[49];
-	    		top_right_ = top_rights[49];
-	    		bottom_left_ = bottom_lefts[49];
-	    		bottom_right_ = bottom_rights[49];
+	    		top_left_ = top_lefts[5];
+	    		top_right_ = top_rights[5];
+	    		bottom_left_ = bottom_lefts[5];
+	    		bottom_right_ = bottom_rights[5];
 	    		tagsIdentified = true;
 
 	    	    std::cout<<"Top Left :" << top_left_ <<std::endl;

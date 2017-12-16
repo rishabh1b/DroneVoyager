@@ -10,7 +10,7 @@
   	<remap from="camera/image_raw" to="$(arg cam_name)/image_raw" />
   </node --> 
 
-	<arg name="marker_size" default="4.4" />
+	<arg name="marker_size" default="9.36625" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
 	<arg name="cam_image_topic" default="/$(arg cam_name)/front/image_raw" />

@@ -11,8 +11,8 @@
   </node --> 
 
 	<arg name="marker_size" default="9.36625" />
-	<arg name="max_new_marker_error" default="0.08" />
-	<arg name="max_track_error" default="0.2" />
+	<arg name="max_new_marker_error" default="0.12" />
+	<arg name="max_track_error" default="0.25" />
 	<arg name="cam_image_topic" default="/$(arg cam_name)/front/image_raw" />
 	<arg name="cam_info_topic" default="/$(arg cam_name)/front/camera_info" />
 	<arg name="output_frame" default="/ardrone_base_frontcam" />
