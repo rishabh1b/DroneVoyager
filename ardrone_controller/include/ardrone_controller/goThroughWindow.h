@@ -75,6 +75,8 @@ private:
     std::vector<int> top_lefts, bottom_lefts, bottom_rights, top_rights;
     int callbackARTagCounter;
     bool four_tags_located, tagsIdentified;
+    float oldx, oldy, oldz, x, y, z;
+    bool isFirstErrorCallback;
 public:
 	GoThroughWindow();
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
