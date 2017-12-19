@@ -36,7 +36,7 @@ cd..
 There are some prerequisites that should be taken care of before running on real drone
 1. Make sure you have AR tag markers located in vicinity of the drone. The tags can be downloaded from the page[here](http://wiki.ros.org/ar_track_alvar). 
 2. Enter the tag size you printed is entered in ```ar_drone_percept_test.launch``` file.
-3. Finally, you must calibrate the front camera of the drone using [ros_camera_calibration](http://wiki.ros.org/camera_calibration) and put the calibration file in ```~/.ros/camera_info/ardrone_front_camera.yaml```or use the one in this repo
+3. Finally, you must calibrate the front camera of the drone using [ros_camera_calibration](http://wiki.ros.org/camera_calibration) and put the calibration file in ```~/.ros/camera_info/ardrone_front.yaml```or use the one in this repo
 
 Once the above steps are completed. Do the following -
 1. Connect to the AR drone wifi
