@@ -63,7 +63,9 @@ The files in the simulator files folder can be used to simulate the flight of th
 
 ### Copy Simulator Files
 copy folders marker0 marker2 marker3 marker5 to ```~/.gazebo/models```
+
 copy project.launch to ```ARDroneWindow/src/tum_simulator/cvg_sim_gazebo/launch```
+
 copy tags.world to the ```ARDroneWindow/src/tum_simulator/cvg_sim_gazebo/worlds```
 
 
