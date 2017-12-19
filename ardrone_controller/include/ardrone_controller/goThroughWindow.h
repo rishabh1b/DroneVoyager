@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <math.h>
+#include "std_msgs/Empty.h"
 
 #define KEYCODE_L 0x6C // lock slam mapping and save map
 #define KEYCODE_U 0x75 // unlock mapping
@@ -77,13 +78,19 @@ private:
     std::vector<int> top_lefts, bottom_lefts, bottom_rights, top_rights;
     int callbackARTagCounter;
     bool four_tags_located, tagsIdentified;
-    float vel_max, dist_max;
+    float vel_max, dist_max, dist_max_y;
     float oldx, oldy, oldz, x, y, z;
     bool isFirstErrorCallback;
     bool targetPublished;
     float yaw_threshold, z_threshold, y_threshold;
+    float targetlocktime;
+    bool targetLocked, targetAchieved;
+    float tolerance;
+    ros::Publisher takeOffPub_, landingPub_;
+    std_msgs::Empty emptyMsg;
 public:
 	GoThroughWindow();
+	GoThroughWindow(float vel_max, float dist_max, float dist_max_y, float yaw_threshold, float z_threshold, float y_threshold, float tolerance);
 	void updatePose(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
 	void updateError(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
 	void getWindowCentre(const geometry_msgs::Point msg);

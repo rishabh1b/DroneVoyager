@@ -2,7 +2,7 @@
 
 OpenLoopControl::OpenLoopControl(ros::NodeHandle nh) {
 	this->nh_ = nh;
-	velPub_ = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 5);
+	velPub_ = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 	takeOffPub_ = nh.advertise<std_msgs::Empty>("ardrone/takeoff", 1, true);
 	landingPub_ = nh.advertise<std_msgs::Empty>("ardrone/land", 1, true);
 	heightSub_ = nh.subscribe("/sonar_height", 1, &OpenLoopControl::heightCallback, this);
@@ -32,6 +32,9 @@ void OpenLoopControl::execute() {
 
    		 loop_rate.sleep();
 	}
+  msg_.linear.x = 0;
+  msg_.linear.y = 0;
+  velPub_.publish(msg_);
   // landingPub_.publish(emptyMsg); 
 }
 
@@ -63,8 +66,8 @@ void OpenLoopControl::execute2() {
 
 
 void OpenLoopControl::setWaypoint (float x) {
-	float max_velocity = 1;
-    float min_velocity = -1;
+	float max_velocity = 0.1;
+    float min_velocity = -0.1;
 
     timer = x / max_velocity;
     if (x < 0) {

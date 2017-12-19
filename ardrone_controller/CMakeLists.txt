@@ -147,6 +147,7 @@ include_directories(
  add_executable(pass_window src/GoThroughWindow.cpp)
  add_executable(pass_window2 src/GoThroughWindow2.cpp)
  add_executable(pass_window3 src/GoThroughWindow3.cpp)
+ add_executable(pass_window4 src/GoThroughWindow4.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -177,6 +178,11 @@ target_link_libraries(pass_window2
  )
 
  target_link_libraries(pass_window3
+    ${catkin_LIBRARIES}
+    ${EIGEN3_LIBS}
+ )
+
+ target_link_libraries(pass_window4
     ${catkin_LIBRARIES}
     ${EIGEN3_LIBS}
  )

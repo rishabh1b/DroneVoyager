@@ -178,27 +178,28 @@ void GoThroughWindow::Control(const ardrone_autonomy::Navdata navdata) {
 	
 	/** ALTITUDE control */
 	if (std::abs(altitudeErr) > z_threshold) {
+		std::cout << "Altitude Error: " << altitudeErr << std::endl;
 		ROS_INFO("Control Z");
-		controlsig.linear.z = vel_max * altitudeErr / 0.5; // TODO: put a variable for this
+		controlsig.linear.z = 1 * altitudeErr / 0.5; // TODO: put a variable for this
 	}
 
-	else if (std::abs(yawErr) > yaw_threshold && std::abs(y) > y_threshold) {
+	else if (std::abs(yawErr) > yaw_threshold) {
 		ROS_INFO("Control Yaw and y");
 		controlsig.angular.z = yawErr * 0.2 / 60; // TODO: put a variable to this
 		// Disregard xyerr(1)
-		controlsig.linear.y = -vel_max * xyErr(0) * yawErr / dist_max_y;								 
+		// controlsig.linear.y = -vel_max * xyErr(0) * yawErr / dist_max_y;								 
 	}
-	/*else if (std::abs(y) > y_threshold) {
+	else if (std::abs(y) > y_threshold) {
 		ROS_INFO("Control Y");
 		controlsig.linear.y = vel_max * xyErr(1) / dist_max_y;
-	}*/
+	}
 	else{
 		ROS_INFO("Control X");
 		controlsig.linear.x = vel_max * xyErr(0) / dist_max;
 		if (xyErr(0) < 1.6) {
 			targetLocked = true;
 			// targetlocktime = xyErr(0) / vel_max;
-			targetlocktime = 2000;
+			targetlocktime = 40;
 		}
 	}
 

@@ -2,9 +2,18 @@
 <launch>
 	<include file="$(find ardrone_control)/launch/ardrone_percept_test.launch">
         </include>
-	<node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen"/>
+	<!--node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen"/-->
 	<node name="tags" pkg="ardrone_control" type="tags" respawn="false" output="screen"/>
 	<!--node name="pass_window" pkg="ardrone_control" type="pass_window" respawn="false" output="screen"-->
-	<node name="pass_window3" pkg="ardrone_control" type="pass_window3" respawn="false" output="screen"/>
+	<node name="pass_window4" pkg="ardrone_control" type="pass_window4" respawn="false" output="screen">
+		  <param name="vel_max"              value="0.1"/>
+    		<param name="dist_max"          value="3.5"/>
+    		<param name="dist_max_y"            value="0.4"/>
+    		<param name="yaw_threshold"            value="20"/>
+		<param name="z_threshold" value="0.3"/>
+		<param name="y_threshold" value="0.4"/>
+		<param name="tolerance" value="0.8"/>
+
+	</node>
 	<node name="keyin" pkg="ardrone_control" type="keyin" respawn="false" output="screen"/>
 </launch>
