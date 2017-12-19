@@ -75,11 +75,11 @@ source ArDroneWindow/devel/setup.bash
 ```
 3) launch simulator with drone and ar tags
 ```
-roslaunch cvg_sim_gazebo ardrone_testworld.launch
+roslaunch cvg_sim_gazebo project.launch
 ```
 4) launch DroneVoyager control node
 ```
-roslaunch ardrone_control project.launch
+roslaunch ardrone_control ardrone_percept_test.launch
 ```
 
 
