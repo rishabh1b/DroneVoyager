@@ -59,7 +59,9 @@ To withdraw the control to the drone, you can press the ```M``` key when focused
 Here is the YouTube [link](https://youtu.be/PYlbKkE2rPg) of our attempt with this software.
 
 ## Simulation using gazebo/tum_simulator
-The files in the simulator files folder can be used to simulate the flight of the AR Drone reading AR tags and flying to the window. This simulation was developed using ROS indigo on Ubuntu 14.04 and gazebo 2. It may be possible to run gazebo 7 with ROS indigo but this was not explored.
+A gazebo simulator environment was built to test control codes with the tum_simulator package. This package depends on and mimics the ardrone_autonomy package. Thus when running the tum_simulator, the ardrone_autonomy package is running in the background and publishing to the same topics it would as if ardrone_autonomy were controlling an actual ardrone. This allows the use of the ar_track_alvar package which uses the /ardrone/front/image_raw topic to detect the tags seen by the drone camera (in this case, what the drone in the simulator "sees".).
+
+The files in the simulator folder can be used to simulate the flight of the AR Drone reading AR tags and flying to the window. This simulation was developed using ROS indigo on Ubuntu 14.04 and gazebo 2. It may be possible to run gazebo 7 with ROS indigo but this was not explored. NOTE: The ar tags included in these files are markers 0,2,3,5 because they matched what we used to test the real drone. Also note, the size of the tags in this simulator environment cannot be changed as gazebo 2 does not have this functionality. Gazebo 7 might be able to scale them down to a specified sized but this was not explored.
 
 ### Copy Simulator Files
 copy folders marker0 marker2 marker3 marker5 to ```~/.gazebo/models```
