@@ -62,9 +62,9 @@ Here is the YouTube [link](https://youtu.be/PYlbKkE2rPg) of our attempt with thi
 The files in the simulator files folder can be used to simulate the flight of the AR Drone reading AR tags and flying to the window. This simulation was developed using ROS indigo on Ubuntu 14.04 and gazebo 2. It may be possible to run gazebo 7 with ROS indigo but this was not explored.
 
 ### Copy Simulator Files
-tag markers
-world file
-launch file
+copy folders marker0 marker2 marker3 marker5 to ```~/.gazebo/models```
+copy project.launch to ```ARDroneWindow/src/tum_simulator/cvg_sim_gazebo/launch```
+copy tags.world to the ```ARDroneWindow/src/tum_simulator/cvg_sim_gazebo/worlds```
 
 
 ### To Run Simulator
@@ -79,7 +79,7 @@ roslaunch cvg_sim_gazebo ardrone_testworld.launch
 ```
 4) launch DroneVoyager control node
 ```
-roslaunch ardrone_control pass_window.launch
+roslaunch ardrone_control project.launch
 ```
 
 
