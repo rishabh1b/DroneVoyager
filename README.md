@@ -8,10 +8,10 @@ _DISCLAIMER_:- The software is not perfect and it does not function reliably alw
 2. AR alvar package for AR tag detection - 
 ```sudo apt-get install ros-indigo-ar-track-alvar```
 # Installation
-1. Create a workspace - 
+1. Create a workspace - NOTE: The simulator package looks specifically for 'catkin_ws' folder
 ```
-mkdir -p ~/ARDroneWindow/src
-cd  ~/ARDroneWindow/src
+mkdir -p ~/catkin_ws/src
+cd  ~/catkin_ws/src
 catkin_init_workspace
 ```
 2. Download Dependencies - 
@@ -66,16 +66,16 @@ The files in the simulator folder can be used to simulate the flight of the AR D
 ### Copy Simulator Files
 copy folders marker0 marker2 marker3 marker5 to ```~/.gazebo/models```
 
-copy project.launch to ```ARDroneWindow/src/tum_simulator/cvg_sim_gazebo/launch```
+copy project.launch to ```catkin_ws/src/tum_simulator/cvg_sim_gazebo/launch```
 
-copy tags.world to the ```ARDroneWindow/src/tum_simulator/cvg_sim_gazebo/worlds```
+copy tags.world to the ```catkin_ws/src/tum_simulator/cvg_sim_gazebo/worlds```
 
 
 ### To Run Simulator
 1) source ros installation
 2) source catkin ws with simulator
 ```
-source ArDroneWindow/devel/setup.bash
+source catkin_ws/devel/setup.bash
 ```
 3) launch simulator with drone and ar tags
 ```
@@ -83,8 +83,9 @@ roslaunch cvg_sim_gazebo project.launch
 ```
 4) launch DroneVoyager control node
 ```
-roslaunch ardrone_control ardrone_percept_test.launch
+roslaunch ardrone_control window_pass_test.launch
 ```
+Make sure to look at the terminal output to see if there any errors. Tags and/or the drone may not show in the gazebo environment if the model and mesh files cannot be found. It may help to run gazebo standalone so that it can update the local model files.
 
 
 
