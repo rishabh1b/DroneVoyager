@@ -54,6 +54,7 @@ To withdraw the control to the drone, you can press the ```M``` key when focused
 ```rostopic pub -1 ardrone/land std_msgs/Empty```
 7. Terminal 6[rviz]
 ```rosrun rviz rviz```
+In rviz add the ardrone/front/image_raw camera, vizualization/markers topic, and tf
 
 # Demonstration
 Here is the YouTube [link](https://youtu.be/PYlbKkE2rPg) of our attempt with this software.
@@ -87,6 +88,7 @@ roslaunch ardrone_control window_pass_test.launch
 ```
 Make sure to look at the terminal output to see if there any errors. Tags and/or the drone may not show in the gazebo environment if the model and mesh files cannot be found. It may help to run gazebo standalone so that it can update the local model files.
 
+press g in the terminal running window_pass_test.launch to execute the maneuver to pass through the window
 
 
 
